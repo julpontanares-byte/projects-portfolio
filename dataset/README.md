@@ -59,11 +59,21 @@ The split is the one provided by the original dataset (70/15/15), preserved afte
 
 ### Unseen test set
 
-| Set | Images | Purpose |
-|---|---|---|
-| `unseen_test/` | TODO | Our own photos, taken with a laptop webcam in different places and lighting than the source dataset. Never used for training or validation. Used only for the final evaluation of unseen situations. |
+| Class | Images |
+|---|---|
+| exit | 6 |
+| mens_restroom | 6 |
+| womens_restroom | 6 |
+| no_entry | 6 |
+| slippery_floor | 6 |
+| No sign (background) | 5 |
+| **Total** | **35** |
 
-TODO: describe how the unseen set was collected (locations, lighting, distances, angles, occlusion, no-sign images) and add the per-class counts.
+- **Sources:** [n] photos taken with a laptop webcam, [n] taken with a phone, [n] from [dataset/site name, link, license]. [Real signs / printed signs / screen displays: say which.]
+- **Conditions:** [lighting, distances, angles, backgrounds, occlusion].
+- **Labels:** drawn by the group in makesense.ai (YOLO format), same class IDs as `data.yaml`. The 5 no-sign images have empty label files.
+- **Checks:** `src/testing/check_unseen.py` found no label problems and no near-duplicates of the train, valid, or test images (perceptual hash, 256 bits, threshold 24), and pairs were compared by eye.
+- None of these images were used for training or validation.
 
 ## Preprocessing and Preparation
 
