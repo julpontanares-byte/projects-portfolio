@@ -11,6 +11,11 @@ Usage (run from the repository root):
 Files are saved as dataset/unseen_test/images/unseen_<label>_<NN>.jpg and numbering
 continues from the existing files, so you can stop and resume without overwriting.
 These images must NEVER be used for training or validation.
+
+For --label nosign (images with no sign in view) an EMPTY label file with the same name
+is also created in the sibling labels/ folder (dataset/unseen_test/labels/), because
+an empty .txt is the YOLO way of saying "no objects in this image".
+For all other labels, the boxes must be drawn afterwards in an annotation tool.
 """
 import argparse
 import sys
@@ -47,6 +52,11 @@ def main():
     prefix = f"unseen_{args.label}"
     idx = next_index(out, prefix)
 
+    # nosign photos need an empty label file; it goes in labels/ next to the images/ folder
+    labels_dir = out.parent / "labels"
+    if args.label == "nosign":
+        labels_dir.mkdir(parents=True, exist_ok=True)
+
     # DirectShow starts much faster than the default backend on Windows
     cap = cv2.VideoCapture(args.camera, cv2.CAP_DSHOW) if sys.platform.startswith("win") \
         else cv2.VideoCapture(args.camera)
@@ -75,6 +85,9 @@ def main():
             path = out / f"{prefix}_{idx:02d}.jpg"
             cv2.imwrite(str(path), frame, [cv2.IMWRITE_JPEG_QUALITY, 95])
             print("saved", path)
+            if args.label == "nosign":
+                (labels_dir / f"{path.stem}.txt").touch()
+                print("created empty label", labels_dir / f"{path.stem}.txt")
             idx += 1
             saved += 1
             last_saved = time.time()
