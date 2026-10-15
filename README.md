@@ -7,11 +7,11 @@
 
 | Name | Role / Contribution |
 |---|---|
-| Ven Lavapie | [e.g., dataset preparation] |
+| Ven John Rey Lavapie | [e.g., dataset preparation] |
 | Ivy Pauline Muit | [e.g., model training] |
 | Ayelyn Panliboton | [e.g., evaluation and testing] |
 | Juliet Pontanares | [e.g., live demo / inference code] |
-| [Rhea Lizza Sanglay | [e.g., report and documentation] |
+| Rhea Lizza Sanglay | [e.g., report and documentation] |
 
 **Course:** Computer Vision, BS Computer Science – 4A
 **Instructor:** Elena Clarexe Gulane
