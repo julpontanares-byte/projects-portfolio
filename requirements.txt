@@ -1,2 +1,2 @@
-ultralytics
-opencv-python
+   ultralytics==8.4.177
+   opencv-python
