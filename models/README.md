@@ -41,13 +41,15 @@ The model was trained with `src/training/train.py`. The full list of settings is
 | Early stopping | Patience 20 epochs |
 | Augmentation | Ultralytics defaults (mosaic until the last 10 epochs, horizontal flip, color jitter, scaling) |
 | Random seed | 0 |
-| Environment | Google Colab, Tesla T4 GPU, Ultralytics 8.4.177, Python 3.13, PyTorch 2.11 |
+| Training environment | Google Colab, Tesla T4 GPU, Ultralytics 8.4.177, Python 3.13, PyTorch 2.11 |
 
 To retrain:
 
 ```bash
 python src/training/train.py --epochs 50
 ```
+
+Training curves, confusion matrices, and sample predictions from the training run are in [`results/training/`](../results/training/).
 
 ## Validation Results
 
@@ -64,11 +66,11 @@ Results of `best.pt` on the **validation split** (106 images), as printed at the
 
 Inference speed on the T4 GPU was about 10 ms per image.
 
-The validation set was also used to select the best checkpoint, and it is small (14 to 27 images per class), so these numbers are optimistic. See [`results/`](../results/) for the held-out test results and the unseen-set results.
+The validation set was also used to select the best checkpoint, and it is small (14 to 27 images per class), so these numbers are optimistic. The held-out test split and the unseen set below give fairer estimates.
 
 ## Evaluation Results
 
-Evaluated with `src/testing/evaluate.py` on CPU after training was finished. The model was not changed after these evaluations. Re-running with plotting disabled gave identical results.
+Evaluated with `src/testing/evaluate.py` on a laptop CPU (Intel Core i5-1035G1, Python 3.12, PyTorch 2.14 CPU build, Ultralytics 8.4.177) after training was finished. The model was not changed after these evaluations.
 
 ### Dataset test split (104 images)
 
@@ -92,7 +94,22 @@ Evaluated with `src/testing/evaluate.py` on CPU after training was finished. The
 | slippery_floor | 0.915 | 1.000 | 0.956 | 0.995 | 0.746 |
 | **all** | 0.747 | 0.329 | 0.456 | 0.327 | 0.211 |
 
-Performance drops sharply on the unseen set, which contains real signs with designs, sizes, and lighting unlike the training images. Each class has only 6 to 8 instances, so these scores are indicative, not precise. A precision of 1.000 next to a recall of 0.000 (men's restroom, no_entry) is not a strength, so use mAP and the confusion matrix for those classes. Tables and plots: [`results/evaluation/test/`](../results/evaluation/test/) and [`results/evaluation/unseen/`](../results/evaluation/unseen/).
+Performance drops sharply on the unseen set, which contains real signs with designs, sizes, and lighting unlike the training images. What the results show:
+
+- **`slippery_floor` generalizes well.** It is a distinctive yellow object, detected confidently in every unseen image that contains it.
+- **`exit` is partly detected.** Exit signs were found in about half of the instances, and missed in clear, well-framed photos as well.
+- **Restroom and no-entry signs are mostly missed or labeled `exit`.** The model often draws an `exit` box on restroom doors and on a clear "NO ENTRY" sign, and it misses small door signs and differently styled signs.
+- **Some signs get duplicate overlapping boxes** with different classes, and there is an occasional false detection on an empty hallway.
+
+Each unseen class has only 6 to 8 instances, so these scores are indicative, not precise. A precision of 1.000 next to a recall of 0.000 (men's restroom, no_entry) is not a strength, because there were no correct detections to measure, so use mAP and the confusion matrix for those classes. The confusion matrices and the precision/recall tables are computed at different operating points and can disagree for the same class (for example, in the test-split confusion matrix about 43% of men's restroom signs are labeled women's restroom, while the table reports a men's restroom recall of 0.82), so both are reported.
+
+Speed on the laptop CPU was about 95 to 130 ms per image (roughly 8 to 10 frames per second).
+
+### Notes on the evaluation
+
+- The evaluation was run three times (with plots, without plots, and a plain re-run). All three gave identical metrics.
+- The first sample-prediction image of the first unseen run (`val_batch0_pred.jpg`) showed a display artifact: streaked colors across all tiles. The predictions in it match those of the clean re-run, so the model input and metrics were not affected. The clean version is the one stored in `results/evaluation/unseen/`. In that image, the yellow tint on the `unseen_no_entry_04` tile appears to be a plotting artifact as well; the original photo is normal.
+- Tables and plots: [`results/evaluation/test/`](../results/evaluation/test/) and [`results/evaluation/unseen/`](../results/evaluation/unseen/).
 
 ## Loading and Using the Model
 
@@ -121,14 +138,26 @@ yolo predict model=models/best.pt source=path/to/image.jpg conf=0.5 save=True
 yolo predict model=models/best.pt source=0 conf=0.5 show=True
 ```
 
-`source=0` uses the default laptop webcam. The Ultralytics default confidence threshold is 0.25. We plan to use about 0.5 to reduce false and duplicate detections. TODO: confirm the final threshold using the validation F1 curve in `results/training/BoxF1_curve.png`.
+`source=0` uses the default laptop webcam. The Ultralytics default confidence threshold is 0.25, and we use 0.5 by default to reduce false and duplicate detections. A higher threshold removes more false boxes but also misses more real signs, so it can be adjusted.
 
-TODO: add the live demo script (`src/vision/live_demo.py`) and its run instructions here.
+### Live demo
+
+The live demo script draws the boxes, class names, and confidence scores, and shows the model's preprocessed input:
+
+```bash
+python src/vision/live_demo.py                                  # laptop webcam
+python src/vision/live_demo.py --source path/to/image.jpg       # one image
+python src/vision/live_demo.py --source dataset/unseen_test/images   # a folder of images
+```
+
+Keys: `Q` quit, `+` / `-` change the confidence threshold, `S` save a screenshot to `results/demo/`, `N` / `P` next / previous image. The webcam image is not mirrored, because mirrored signs can be misread.
 
 ## Known Limitations
 
-- **Restroom signs are confused with each other.** In the validation confusion matrix, many men's restroom signs were labeled as women's restroom, and some women's restroom and `no_entry` signs were confused with other classes. Counts per class are small, so individual percentages change a lot with a single image.
+- **Restroom signs are confused with each other.** In the test-split confusion matrix, about 43% of men's restroom signs are labeled women's restroom and about 30% of women's restroom signs are labeled men's restroom. Counts per class are small, so individual percentages change a lot with a single image.
+- **Unseen real-world signs are often missed or labeled `exit`** (see Evaluation Results).
 - **Duplicate boxes.** Some signs receive several overlapping boxes at low confidence. A higher confidence threshold reduces this.
-- **Domain gap.** Most training images are clean, close-up photos from the source dataset. Performance on our webcam, at a distance, in poor lighting, or from a low robot viewpoint can be lower, which is evaluated with our own unseen set.
-- **Single-sign scenes.** The training and validation images appear to contain one sign class each, so scenes with several different signs were not evaluated. TODO: confirm.
+- **Domain gap.** Most training images are clean, close-up photos from the source dataset. Performance on our webcam, at a distance, in poor lighting, or from a low robot viewpoint is lower, as the unseen results show.
+- **Small or distant signs** are often missed.
+- **Single-sign scenes.** Every image in the cleaned dataset contains exactly one sign class (the per-class image counts add up to the number of images in each split), so scenes with several different signs were not evaluated.
 - **Trained on the Vietnamese-style signs of the source dataset.** Signs with a very different design may not be recognized.

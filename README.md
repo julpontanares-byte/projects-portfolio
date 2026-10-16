@@ -1,31 +1,54 @@
 # Vision-Based Autonomous 4WD Delivery Robot
 
-> **Current stage:** Midterm (SEE → RECOGNIZE). The Final stage (SEE → DECIDE → ACT) sections are marked **[Final]** and will be completed later.
-> Replace every `[bracketed placeholder]` and remove every `TODO` before the Final submission.
+A camera-based sign recognition system for a 4WD delivery robot, built with YOLOv8.
+
+> **Current stage:** Midterm (SEE → RECOGNIZE). The vision system is complete. Robot integration, decision logic, motor control, and autonomous behavior belong to the Final stage (SEE → DECIDE → ACT) and are marked **[Final]**.
 
 ## Group Members
 
-| Name | Role / Contribution |
-|---|---|
-| Ven John Rey Lavapie | [e.g., dataset preparation] |
-| Ivy Pauline Muit | [e.g., model training] |
-| Ayelyn Panliboton | [e.g., evaluation and testing] |
-| Juliet Pontanares | [e.g., live demo / inference code] |
-| Rhea Lizza Sanglay | [e.g., report and documentation] |
+| Name |
+|---|
+| Ven John Rey Lavapie |
+| Ivy Pauline Muit |
+| Ayelyn Janne Panliboton |
+| Juliet Pontanares |
+| Rhea Lizza Sanglay |
 
 **Course:** Computer Vision, BS Computer Science – 4A
 **Instructor:** Elena Clarexe Gulane
 
 ## Assigned Specialization
 
-**Delivery Robot.** The vision system must recognize destination markers so the robot can decide where to go (Final).
+**Autonomous Delivery Robot.** The vision system must recognize visual markers that identify delivery destinations, so that the robot can decide where to go and where to stop (Final).
 
 ## Project Description
 
-This project develops a camera-based vision system for a 4WD mobile delivery robot. The system detects and recognizes indoor signs that act as destination markers and zone markers (for example, restrooms and exits as delivery points, and restricted or hazardous zones to avoid).
+The system detects and recognizes five types of indoor signs and treats them as markers that guide a delivery robot:
 
-- **Midterm:** a working computer vision pipeline that captures an image or live camera frame, preprocesses it, detects and recognizes the signs, and displays the result visually (bounding box, class label, confidence score).
+| Marker (class) | Meaning | Role in the delivery scenario |
+|---|---|---|
+| `exit` | Exit sign | Destination, and the start / return point |
+| `mens_restroom` | Men's restroom | Destination |
+| `womens_restroom` | Women's restroom | Destination |
+| `no_entry` | No entry for unauthorized persons | Restricted area: do not proceed that way |
+| `slippery_floor` | Wet / slippery floor sign | Hazard: slow down |
+
+- **Midterm:** a working computer vision pipeline that captures an image or live camera frame, preprocesses it, detects and recognizes the signs, and shows the result visually (bounding box, class label, confidence score).
 - **Final [Final]:** the recognized sign is converted into a robot decision and action (SEE → DECIDE → ACT), with motor control and autonomous behavior on the physical 4WD robot.
+
+### Planned delivery behavior [Final]
+
+The robot is given a destination from a short list of predetermined options (for example, men's restroom or women's restroom). It then searches with its camera:
+
+| Detected marker | Robot decision |
+|---|---|
+| The assigned destination | Approach, stop inside the zone, and signal delivery with an LED or buzzer |
+| Another destination marker | Continue |
+| `slippery_floor` | Slow down while the sign is visible, then resume |
+| `no_entry` | Stop, turn away, and keep searching |
+| Nothing detected | Keep searching |
+
+After a delivery, the robot returns to the `exit` marker, where a new destination can be chosen.
 
 ## System Overview
 
@@ -35,48 +58,50 @@ Camera / Image → Preprocessing → YOLOv8 Detector → Detection / Recognition
                                           [Final] → Decision Logic → Robot Control → Motors
 ```
 
-TODO: replace with the group's actual system diagram (also add it to the report, Section 2.1).
-
 ## Hardware Used
 
 **Midterm**
 
-| Component | Specification / Model | Purpose |
+| Component | Specification | Purpose |
 |---|---|---|
-| Camera | Laptop webcam ([model]) | Live image input for the demo |
-| Computer | [Laptop model, CPU/GPU, RAM] | Training and inference |
+| Camera | Built-in laptop webcam | Live image input for the demo and for collecting the unseen test photos |
+| Development laptop | Intel Core i5-1035G1 CPU, NVIDIA GeForce MX230 (2 GB, not used) | Evaluation and live demo (CPU inference) |
+| Training machine | Google Colab, NVIDIA Tesla T4 GPU | Model training |
 
 **Final [Final]**
 
-| Component | Specification / Model | Purpose |
+| Component | Specification | Purpose |
 |---|---|---|
-| 4WD chassis | [model] | Robot platform |
-| DC motors | [model] | Movement |
-| Motor driver | [model] | Motor control |
-| Microcontroller | [Arduino / ESP32 / Raspberry Pi] | Receives commands, drives motors |
-| Camera | [USB webcam / Pi camera / ESP32-CAM] | Robot vision |
-| Power source | [battery type] | Power |
+| 4WD chassis | To be finalized | Robot platform |
+| DC motors | To be finalized | Movement |
+| Motor driver | To be finalized | Motor control |
+| Microcontroller | To be finalized (Arduino / ESP32 / Raspberry Pi) | Receives commands, drives motors |
+| Camera | To be finalized | Robot vision |
+| Power source | To be finalized | Power |
 
 ## Software and Tools
 
 | Tool | Version | Purpose |
 |---|---|---|
-| Python | [3.x] | Main programming language |
-| Ultralytics (YOLOv8) | [version] | Model training and inference |
-| OpenCV | [version] | Image capture, preprocessing, visualization |
-| NumPy | [version] | Numerical processing |
+| Python | 3.12 (local), 3.13 (Colab) | Main programming language |
+| Ultralytics (YOLOv8) | 8.4.177 | Model training, evaluation, and inference |
+| PyTorch | 2.14 CPU build (local), 2.11 CUDA build (Colab) | Deep learning backend |
+| OpenCV | see `requirements.txt` | Image capture, preprocessing, and visualization |
+| NumPy | installed with the libraries above | Numerical processing |
 | Roboflow (website) | n/a | Source of the base dataset |
-| Arduino IDE **[Final]** | [version] | Motor controller code |
+| makesense.ai | n/a | Annotation of the unseen test images |
+| Arduino IDE **[Final]** | to be finalized | Motor controller code |
 
 ## Computer Vision Methodology
 
-1. **Dataset:** a public indoor-sign dataset, cleaned to 5 classes, plus our own unseen test photos.
-2. **Preprocessing:** [Auto-orient and resize to 640×640 (from the source dataset); describe any additional steps the group applies, e.g., normalization or augmentation.]
-3. **Model:** YOLOv8 object detector fine-tuned on our dataset (transfer learning from pretrained weights).
-4. **Evaluation:** precision, recall, mAP, F1-score, and confusion matrix on the test set and on our separate unseen set.
+1. **Dataset:** a public indoor-sign dataset (KPDL – The Indoor Signs) cleaned to 5 classes, plus our own unseen test photos.
+2. **Preprocessing:**
+   - Source dataset: auto-orient and resize to 640×640 (fit, with black edges); no augmentation applied at the source.
+   - Model input (applied by YOLOv8 to every image or frame): resize so the longest side is 640 px, pad to 640×640 (letterbox), convert BGR to RGB, and scale pixel values to 0–1.
+   - Training augmentation: Ultralytics defaults (mosaic, horizontal flip, color jitter, scaling).
+3. **Model:** YOLOv8n object detector fine-tuned from COCO-pretrained weights (transfer learning).
+4. **Evaluation:** precision, recall, F1-score, mAP, and confusion matrix on the held-out test split and on a separate unseen set.
 5. **Output:** bounding boxes, class labels, and confidence scores drawn on the image or live frame.
-
-TODO: confirm the final model size (e.g., yolov8n or yolov8s) and training settings, then update this section and Section 4 of the report.
 
 ## Dataset Overview
 
@@ -84,37 +109,38 @@ TODO: confirm the final model size (e.g., yolov8n or yolov8s) and training setti
 - **Link:** https://universe.roboflow.com/g-lcuz4/kpdl-the-indoor-signs/dataset/11
 - **License:** CC BY-NC-SA 4.0 (attribution required, non-commercial, share-alike)
 - **Format:** YOLOv8 (bounding boxes)
-- **Modification:** the original dataset has 7 classes. We kept 5 and removed the other 2, and renumbered the remaining class IDs from 0 to 4.
+- **Modification:** the original dataset has 832 images and 7 classes. We kept 5 classes, removed 2 (`cam hut thuoc`, no smoking, and `cam lua`, no fire, which are not destinations or navigation hazards), renumbered the class IDs from 0 to 4, and removed the 146 images that contained only the removed classes. 686 images remain.
 
-### Target Classes (tentative, TODO: confirm after checking image counts)
+### Target Classes
 
-| ID | Class | Meaning | Role in the delivery scenario |
-|---|---|---|---|
-| 0 | `exit` | Exit sign | Destination |
-| 1 | `wc nam` | Men's restroom | Destination |
-| 2 | `wc nu` | Women's restroom | Destination |
-| 3 | `khong phan su mien vao` | No entry for unauthorized persons | Restricted zone |
-| 4 | `tron truot` | Slippery floor | Hazard zone |
+| ID | Class | Original name | Meaning | Images |
+|---|---|---|---|---|
+| 0 | `exit` | exit | Exit sign | 171 |
+| 1 | `mens_restroom` | wc nam | Men's restroom | 153 |
+| 2 | `womens_restroom` | wc nu | Women's restroom | 113 |
+| 3 | `no_entry` | khong phan su mien vao | No entry for unauthorized persons | 105 |
+| 4 | `slippery_floor` | tron truot | Slippery floor | 144 |
 
-Removed classes: `cam hut thuoc` (no smoking) and `cam lua` (no fire). [State the reason, e.g., not relevant to robot navigation.]
+The image counts are the number of images that contain each class, across all three splits.
 
 ### Dataset Splits
 
 | Set | Images | Percentage | Purpose |
 |---|---|---|---|
-| Training | [n] | [%] | Model learns from these |
-| Validation | [n] | [%] | Tuning and model selection |
-| Testing | [n] | [%] | Final held-out score |
-| **Unseen test** | [n] | n/a | Our own photos from different places and conditions, never used in training or validation |
+| Training | 476 | 69.4% | The model learns from these images |
+| Validation | 106 | 15.5% | Tuning and model selection |
+| Testing | 104 | 15.2% | Final held-out score |
+| **Unseen test** | 35 | n/a | Our own photos (6 per sign class and 5 with no sign), taken in different places and conditions. Never used for training or validation. |
 
-See [`dataset/README.md`](dataset/README.md) for per-class counts, the cleaning procedure, and how the unseen set was collected.
+See [`dataset/README.md`](dataset/README.md) for the cleaning procedure, per-split counts, and how the unseen set was collected and checked.
 
 ## Model / Algorithm
 
-- **Architecture:** YOLOv8 [n / s / m]
-- **Pretrained weights:** [yolov8n.pt (COCO)]
-- **Trained weights:** see [`models/README.md`](models/README.md)
-- **Recognized classes:** exit, wc nam, wc nu, khong phan su mien vao, tron truot
+- **Architecture:** YOLOv8n (about 3.0 million parameters, 8.2 GFLOPs)
+- **Pretrained weights:** `yolov8n.pt` (COCO)
+- **Training:** 50 epochs, batch 16, image size 640, AdamW optimizer (chosen automatically), seed 0, on Google Colab (T4)
+- **Trained weights:** [`models/best.pt`](models/best.pt), documented in [`models/README.md`](models/README.md)
+- **Recognized classes:** `exit`, `mens_restroom`, `womens_restroom`, `no_entry`, `slippery_floor`
 
 ## System Architecture / Workflow
 
@@ -122,14 +148,12 @@ See [`dataset/README.md`](dataset/README.md) for per-class counts, the cleaning 
 
 **Final [Final]:** Camera → YOLOv8 → Recognized sign → Decision logic → Command to controller → Motor driver → Motors → Robot action.
 
-TODO [Final]: add the decision table (sign → robot action) and the robot control flowchart.
-
 ## Installation and Setup
 
 ```bash
 # 1. Clone the repository
-git clone [repository URL]
-cd [repository folder]
+git clone https://github.com/pau-827/BuzzBee.git
+cd BuzzBee
 
 # 2. (Recommended) create a virtual environment
 python -m venv venv
@@ -140,62 +164,99 @@ venv\Scripts\activate          # Windows
 pip install -r requirements.txt
 ```
 
-The dataset is already included in `dataset/` (see its README). No Roboflow API key is needed.
+The cleaned dataset and the trained weights are already included in the repository. No Roboflow API key is needed. The first install downloads PyTorch, which is large.
 
 ## Running the System
 
-> TODO: update the file names below to match the actual scripts once they are written.
+All commands are run from the repository root.
 
 ```bash
-# Train
-yolo detect train data=dataset/data.yaml model=yolov8n.pt epochs=[n] imgsz=640
-
-# Evaluate on the test set
-yolo detect val model=models/best.pt data=dataset/data.yaml split=test
-
-# Evaluate on the unseen set
-yolo detect val model=models/best.pt data=dataset/data_unseen.yaml split=test
-
-# Live demo (laptop webcam)
+# Live demo with the laptop webcam
 python src/vision/live_demo.py
+
+# Live demo on a single image or a folder of images
+python src/vision/live_demo.py --source path/to/image.jpg
+python src/vision/live_demo.py --source dataset/unseen_test/images
+
+# Evaluate the model on the test split and on the unseen set
+python src/testing/evaluate.py --device cpu
+
+# Collect unseen photos with the webcam (SPACE = save, Q = quit)
+python src/vision/capture_images.py --label exit
+
+# Check the unseen set (labels, counts per class, near-duplicates of dataset images)
+python src/testing/check_unseen.py
+
+# Rebuild the cleaned dataset from the raw Roboflow export (optional)
+python src/training/prepare_dataset.py
+
+# Retrain the model (done on Google Colab with a GPU)
+python src/training/train.py --epochs 50
 ```
+
+Live demo keys: `Q` quit, `+` / `-` change the confidence threshold, `S` save a screenshot to `results/demo/`, `N` / `P` next / previous image.
+
+The unseen test set must not be used for training, validation, or tuning, so the evaluation is run on the final model only.
 
 ## Sample Results
 
-| Result | Description |
-|---|---|
-| ![sample detection](results/sample_detection.png) | [Describe the example] |
+| Set | Precision | Recall | mAP@0.5 | mAP@0.5:0.95 |
+|---|---|---|---|---|
+| Test split (104 images) | 0.923 | 0.932 | 0.957 | 0.812 |
+| Unseen set (35 images) | 0.747 | 0.329 | 0.327 | 0.211 |
 
-TODO: add the metrics table (precision, recall, mAP, F1), the confusion matrix, and success/failure examples. Full results are in [`results/`](results/).
+The model performs very well on the held-out test split but drops sharply on the unseen photos, which contain real signs with designs, sizes, and lighting unlike the training images. `slippery_floor` generalizes well (mAP@0.5 of 0.995 on the unseen set), while men's restroom, women's restroom, and no-entry signs are often missed or labeled `exit`. Each unseen class has only 6 to 8 instances, so these scores are indicative. Details are in [`models/README.md`](models/README.md).
+
+| Training curves | Test split confusion matrix | Unseen set confusion matrix |
+|---|---|---|
+| ![training curves](results/training/results.png) | ![test confusion matrix](results/evaluation/test/confusion_matrix_normalized.png) | ![unseen confusion matrix](results/evaluation/unseen/confusion_matrix_normalized.png) |
+
+All result files are in [`results/`](results/).
+
+## Project Status
+
+- **Done (Midterm):** dataset preparation, model training, evaluation on the test and unseen sets, and project documentation.
+- **In progress (Midterm):** live demonstration evidence (screenshots in `results/demo/`) and the Midterm report.
+- **Not started [Final]:** robot hardware, decision logic, motor control, autonomous behavior, and the two demonstration videos.
+
+## Known Limitations
+
+- Performance drops on unseen real-world signs (see Sample Results). Many men's restroom, women's restroom, and no-entry signs are missed or labeled `exit`.
+- Small or distant signs are often missed, and some signs receive duplicate overlapping boxes at low confidence.
+- The training images are mostly clean, close-up photos, so a laptop or robot camera at a distance, in dim light, or from a low viewpoint is a harder condition.
+- Two classes (`womens_restroom`, `no_entry`) are below the 150 images per class planned for the Final, so more images are needed.
 
 ## Project Materials
 
 | Material | Location |
 |---|---|
-| Midterm report (PDF) | [link or `docs/` path] |
-| Final report (PDF) **[Final]** | [link] |
+| Midterm report (PDF) | To be added |
+| Final report (PDF) **[Final]** | To be added |
 | Dataset | [`dataset/`](dataset/) |
 | Trained model | [`models/`](models/) |
 | Source code | [`src/`](src/) |
-| Test results | [`results/`](results/) |
+| Training and evaluation results | [`results/`](results/) |
 | Demonstration evidence | [`demonstration/`](demonstration/) |
-| Video – Test 1: Figure-8 Line Detection and Tracking **[Final]** | [link] |
-| Video – Test 2: Delivery Robot **[Final]** | [link] |
+| Video – Test 1: Figure-8 Line Detection and Tracking **[Final]** | To be added |
+| Video – Test 2: Delivery Robot **[Final]** | To be added |
 
 ## Repository Structure
 
 ```
-[Project-Title]/
+BuzzBee/
 ├── README.md
 ├── requirements.txt
 ├── src/
-│   ├── vision/        # preprocessing, inference, live demo
-│   ├── training/      # model training
-│   ├── testing/       # evaluation scripts
+│   ├── vision/        # capture_images.py, live_demo.py
+│   ├── training/      # prepare_dataset.py, train.py, train_colab.ipynb
+│   ├── testing/       # evaluate.py, check_unseen.py
 │   └── robot/         # [Final] robot control and communication
-├── dataset/           # cleaned dataset + README
-├── models/            # trained weights + README
+├── dataset/           # train/, valid/, test/, unseen_test/, data.yaml, README
+├── models/            # best.pt + README
 ├── results/
+│   ├── training/      # training curves, confusion matrices, sample predictions
+│   ├── evaluation/    # test/ and unseen/ metrics tables and plots
+│   ├── demo/          # live demo screenshots
 │   ├── test_1/        # [Final] Figure-8 results
 │   └── test_2/        # [Final] specialization results
 └── demonstration/     # photos, screenshots, videos + README
@@ -204,11 +265,11 @@ TODO: add the metrics table (precision, recall, mAP, F1), the confusion matrix, 
 ## References and Acknowledgments
 
 - G. (2026). *KPDL – The Indoor Signs* (Version 11) [Data set]. Roboflow Universe. https://universe.roboflow.com/g-lcuz4/kpdl-the-indoor-signs/dataset/11 (CC BY-NC-SA 4.0)
-- Ultralytics. [YOLOv8 documentation]. TODO: add the APA 7th edition citation.
-- OpenCV. TODO: add the APA 7th edition citation.
+- Jocher, G., Chaurasia, A., & Qiu, J. (2023). *Ultralytics YOLOv8* (Version 8.4.177) [Computer software]. https://github.com/ultralytics/ultralytics
+- Bradski, G. (2000). The OpenCV Library. *Dr. Dobb's Journal of Software Tools*.
 
 All external datasets, code, and models used by this project are acknowledged here and in the project report.
 
 ## License
 
-The dataset is shared under **CC BY-NC-SA 4.0**, as required by the source dataset.
+The cleaned dataset is shared under **CC BY-NC-SA 4.0**, as required by the source dataset. The project code and documentation were created for coursework.

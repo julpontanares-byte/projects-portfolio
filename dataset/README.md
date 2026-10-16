@@ -1,6 +1,6 @@
 # Dataset
 
-This folder contains the dataset used by the Delivery Robot vision system: indoor sign images with bounding-box annotations in YOLOv8 format, cleaned to 5 classes.
+This folder contains the dataset used by the Delivery Robot vision system: indoor sign images with bounding-box annotations in YOLOv8 format, cleaned to 5 classes, plus a separate set of unseen test photos.
 
 ## Source
 
@@ -24,13 +24,13 @@ The original dataset has 7 classes, with Vietnamese names. We kept 5 and renamed
 
 | ID | Class | Original name | Meaning | Role in the delivery scenario |
 |---|---|---|---|---|
-| 0 | `exit` | exit | Exit sign | Destination |
+| 0 | `exit` | exit | Exit sign | Destination, and the start / return point |
 | 1 | `mens_restroom` | wc nam | Men's restroom | Destination |
 | 2 | `womens_restroom` | wc nu | Women's restroom | Destination |
-| 3 | `no_entry` | khong phan su mien vao | No entry for unauthorized persons | Restricted zone |
-| 4 | `slippery_floor` | tron truot | Slippery floor | Hazard zone |
+| 3 | `no_entry` | khong phan su mien vao | No entry for unauthorized persons | Restricted area: do not proceed that way |
+| 4 | `slippery_floor` | tron truot | Slippery floor | Hazard: slow down |
 
-**Removed classes:** `cam hut thuoc` (no smoking) and `cam lua` (no fire). These are rules and restrictions that do not correspond to a destination, a restricted zone, or a navigation hazard for the robot.
+**Removed classes:** `cam hut thuoc` (no smoking) and `cam lua` (no fire). These are rules and restrictions that do not correspond to a destination, a restricted area, or a navigation hazard for the robot.
 
 ## Dataset Summary
 
@@ -59,21 +59,23 @@ The split is the one provided by the original dataset (70/15/15), preserved afte
 
 ### Unseen test set
 
-| Class | Images |
-|---|---|
-| exit | 6 |
-| mens_restroom | 6 |
-| womens_restroom | 6 |
-| no_entry | 6 |
-| slippery_floor | 6 |
-| No sign (background) | 5 |
-| **Total** | **35** |
+Our own photos, kept in `unseen_test/`. They are used only for the final evaluation, to measure how the model handles situations it was not trained on.
 
-- **Sources:** [n] photos taken with a laptop webcam, [n] taken with a phone, [n] from [dataset/site name, link, license]. [Real signs / printed signs / screen displays: say which.]
-- **Conditions:** [lighting, distances, angles, backgrounds, occlusion].
-- **Labels:** drawn by the group in makesense.ai (YOLO format), same class IDs as `data.yaml`. The 5 no-sign images have empty label files.
-- **Checks:** `src/testing/check_unseen.py` found no label problems and no near-duplicates of the train, valid, or test images (perceptual hash, 256 bits, threshold 24), and pairs were compared by eye.
-- None of these images were used for training or validation.
+| Class | Images | Instances (boxes) |
+|---|---|---|
+| exit | 6 | 8 |
+| mens_restroom | 6 | 7 |
+| womens_restroom | 6 | 7 |
+| no_entry | 6 | 6 |
+| slippery_floor | 6 | 6 |
+| No sign (background) | 5 | 0 |
+| **Total** | **35** | **34** |
+
+- **Capture:** the photos were taken with the group's laptop webcam using `src/vision/capture_images.py`, at 1280×720. File names follow the pattern `unseen_<class>_<NN>.jpg`, where the class in the name is what the photographer pointed the camera at.
+- **Conditions:** dim and uneven lighting, sensor noise, glare, different distances and angles, signs on doors, walls, and floors, and some small or distant signs. The 5 no-sign images show hallways, doors, and walls.
+- **Labels:** drawn by the group in makesense.ai (YOLO format), with the same class IDs as `data.yaml`. The 5 no-sign images have empty label files.
+- **Checks:** `src/testing/check_unseen.py` found no label problems and no near-duplicates of the train, valid, or test images (256-bit perceptual hash, threshold 24). This screen only catches the same or nearly the same image.
+- **Use:** none of these images were used for training or validation, and they are not modified or preprocessed before evaluation beyond the model's own input resizing.
 
 ## Preprocessing and Preparation
 
@@ -109,7 +111,9 @@ dataset/
 ├── test/
 │   ├── images/
 │   └── labels/
-├── unseen_test/        # our own photos (to be added)
+├── unseen_test/
+│   ├── images/          # 35 photos named unseen_<class>_<NN>.jpg
+│   └── labels/          # YOLO label files (empty for the no-sign photos)
 ├── data.yaml
 └── README.md
 ```
@@ -124,25 +128,33 @@ All values after the class ID are normalized to the range 0 to 1.
 
 ## Usage
 
-Point YOLOv8 training at the `data.yaml` file:
+Train with the `data.yaml` file (the model was trained on Google Colab):
 
 ```bash
-yolo detect train data=dataset/data.yaml model=yolov8n.pt epochs=50 imgsz=640
+python src/training/train.py --epochs 50
 ```
 
-The paths in `data.yaml` are relative to the file itself, so it works wherever the repository is cloned.
+Evaluate on the test split and on the unseen set:
+
+```bash
+python src/testing/evaluate.py --device cpu
+```
+
+The paths in `data.yaml` are relative to the file itself, so it works wherever the repository is cloned. The unseen set is never part of `data.yaml`. The evaluation script builds a temporary configuration for it.
 
 ## Reproducing the Cleaning
 
 The raw Roboflow export (YOLOv8 format, version 11) is not stored in this repository. To rebuild this dataset:
 
 1. Download the raw export from the link above and unzip it into a folder named `dataset_raw/` at the repository root.
-2. Run `python src/training/prepare_dataset.py` from the repository root.
+2. Run `python src/training/prepare_dataset.py --dry-run` to see the per-class counts, then `python src/training/prepare_dataset.py` to build the cleaned dataset.
 
 ## Known Limitations
 
-- **Small validation and test sets for some classes.** For example, `no_entry` has 14 validation and 11 test images, so its metrics can change a lot with a single prediction.
-- **Class sizes are uneven**, from 105 images (`no_entry`) to 171 (`exit`).
-- **Domain gap.** The images come from a different camera and environments than our laptop webcam and robot camera, which is why we collect our own unseen test set.
+- **Small validation and test sets for some classes.** For example, `no_entry` has 14 validation and 11 test images, so its metrics can change a lot with a single prediction. The unseen set has only 6 to 8 instances per class, so its scores are indicative.
+- **Class sizes are uneven**, from 105 images (`no_entry`) to 171 (`exit`). `womens_restroom` (113) and `no_entry` (105) are below the 150 images per class planned for the Final.
+- **Domain gap.** The training images are mostly clean, close-up photos from other cameras and environments, while our laptop webcam and robot camera produce darker, noisier frames at a distance. The unseen results show a large drop for this reason (see [`models/README.md`](../models/README.md)).
 - **Possible similarity between classes.** The men's and women's restroom signs look alike, so confusion between them is likely.
-- TODO: confirm and note whether the dataset contains background-only images (images with no sign).
+- **No background-only images.** The training and validation splits contain no images without a sign, so the model has seen few examples of empty scenes.
+- **One training image is skipped by YOLO.** `20-1-_jpg.rf.3aa0781751e863f70976f9e9c2cd486c.jpg` has a label file that mixes polygon and box rows, so Ultralytics ignores it. Training used 475 of the 476 training images.
+- **Mixed annotation types.** The source dataset contains both polygon and bounding-box labels. For detection, Ultralytics uses bounding boxes only and converts polygons to their enclosing boxes.
