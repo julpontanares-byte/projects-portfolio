@@ -66,9 +66,33 @@ Inference speed on the T4 GPU was about 10 ms per image.
 
 The validation set was also used to select the best checkpoint, and it is small (14 to 27 images per class), so these numbers are optimistic. See [`results/`](../results/) for the held-out test results and the unseen-set results.
 
-TODO: add the test-set and unseen-set results (or link to `results/metrics_test.md` and `results/metrics_unseen.md`) after running `src/testing/evaluate.py`.
+## Evaluation Results
 
-Training curves, confusion matrices, and sample predictions are in [`results/training/`](../results/training/).
+Evaluated with `src/testing/evaluate.py` on CPU after training was finished. The model was not changed after these evaluations. Re-running with plotting disabled gave identical results.
+
+### Dataset test split (104 images)
+
+| Class | Precision | Recall | F1 | mAP@0.5 | mAP@0.5:0.95 |
+|---|---|---|---|---|---|
+| exit | 0.902 | 1.000 | 0.949 | 0.993 | 0.832 |
+| mens_restroom | 0.958 | 0.820 | 0.884 | 0.937 | 0.756 |
+| womens_restroom | 0.902 | 0.950 | 0.925 | 0.967 | 0.748 |
+| no_entry | 1.000 | 0.964 | 0.982 | 0.995 | 0.899 |
+| slippery_floor | 0.853 | 0.929 | 0.889 | 0.892 | 0.828 |
+| **all** | 0.923 | 0.932 | 0.928 | 0.957 | 0.812 |
+
+### Unseen test set (35 images)
+
+| Class | Precision | Recall | F1 | mAP@0.5 | mAP@0.5:0.95 |
+|---|---|---|---|---|---|
+| exit | 0.321 | 0.500 | 0.391 | 0.262 | 0.064 |
+| mens_restroom | 1.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| womens_restroom | 0.499 | 0.143 | 0.222 | 0.128 | 0.067 |
+| no_entry | 1.000 | 0.000 | 0.000 | 0.250 | 0.179 |
+| slippery_floor | 0.915 | 1.000 | 0.956 | 0.995 | 0.746 |
+| **all** | 0.747 | 0.329 | 0.456 | 0.327 | 0.211 |
+
+Performance drops sharply on the unseen set, which contains real signs with designs, sizes, and lighting unlike the training images. Each class has only 6 to 8 instances, so these scores are indicative, not precise. A precision of 1.000 next to a recall of 0.000 (men's restroom, no_entry) is not a strength, so use mAP and the confusion matrix for those classes. Tables and plots: [`results/evaluation/test/`](../results/evaluation/test/) and [`results/evaluation/unseen/`](../results/evaluation/unseen/).
 
 ## Loading and Using the Model
 
