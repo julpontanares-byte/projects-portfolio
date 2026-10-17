@@ -15,6 +15,7 @@ A camera-based sign recognition system for a 4WD delivery robot, built with YOLO
 | Rhea Lizza Sanglay |
 
 **Course:** Computer Vision, BS Computer Science – 4A
+
 **Instructor:** Elena Clarexe Gulane
 
 ## Assigned Specialization
@@ -23,32 +24,30 @@ A camera-based sign recognition system for a 4WD delivery robot, built with YOLO
 
 ## Project Description
 
-The system detects and recognizes five types of indoor signs and treats them as markers that guide a delivery robot:
+The system detects and recognizes five types of indoor signs and treats them as markers that guide a delivery robot. The robot always has one assigned destination (`exit`, `mens_restroom`, or `womens_restroom`), so the same destination sign means **stop** or **continue** depending on the assignment:
 
-| Marker (class) | Meaning | Role in the delivery scenario |
-|---|---|---|
-| `exit` | Exit sign | Destination, and the start / return point |
-| `mens_restroom` | Men's restroom | Destination |
-| `womens_restroom` | Women's restroom | Destination |
-| `no_entry` | No entry for unauthorized persons | Restricted area: do not proceed that way |
-| `slippery_floor` | Wet / slippery floor sign | Hazard: slow down |
+| Marker (class) | Meaning | Type | Robot decision |
+|---|---|---|---|
+| `exit` | Exit sign | Destination marker | If it is the assigned destination: stop, delivery point reached. Otherwise: continue searching. (Also the planned start / return point **[Final]**.) |
+| `mens_restroom` | Men's restroom | Destination marker | If assigned: stop, delivery point reached. Otherwise: continue searching. |
+| `womens_restroom` | Women's restroom | Destination marker | If assigned: stop, delivery point reached. Otherwise: continue searching. |
+| `no_entry` | No entry for unauthorized persons | Restricted area | Always stop and turn away, whichever destination is assigned. |
+| `slippery_floor` | Wet / slippery floor sign | Hazard | Slow down while it is visible. If the assigned destination is also visible, the robot stops there instead. |
 
 - **Midterm:** a working computer vision pipeline that captures an image or live camera frame, preprocesses it, detects and recognizes the signs, and shows the result visually (bounding box, class label, confidence score).
 - **Final [Final]:** the recognized sign is converted into a robot decision and action (SEE → DECIDE → ACT), with motor control and autonomous behavior on the physical 4WD robot.
 
-### Planned delivery behavior [Final]
+### Decision logic
 
-The robot is given a destination from a short list of predetermined options (for example, men's restroom or women's restroom). It then searches with its camera:
+The live demo includes a basic decision step that shows what the robot would do for each recognized sign. It is a simulation: no motors are driven in the Midterm. The assigned destination can be set with `--destination` and changed while the demo runs (`D` key). When several signs are visible, the rules apply in this order:
 
-| Detected marker | Robot decision |
-|---|---|
-| The assigned destination | Approach, stop inside the zone, and signal delivery with an LED or buzzer |
-| Another destination marker | Continue |
-| `slippery_floor` | Slow down while the sign is visible, then resume |
-| `no_entry` | Stop, turn away, and keep searching |
-| Nothing detected | Keep searching |
+1. `no_entry` is detected: stop, restricted area, turn away.
+2. The target destination is detected: stop, delivery point reached.
+3. `slippery_floor` is detected: slow down.
+4. Another destination marker is detected: continue.
+5. Nothing is detected: keep searching.
 
-After a delivery, the robot returns to the `exit` marker, where a new destination can be chosen.
+**[Final]:** the same logic will drive the motors, with an LED or buzzer to confirm delivery, and a return to the `exit` marker after each delivery.
 
 ## System Overview
 

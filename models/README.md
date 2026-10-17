@@ -150,7 +150,9 @@ python src/vision/live_demo.py --source path/to/image.jpg       # one image
 python src/vision/live_demo.py --source dataset/unseen_test/images   # a folder of images
 ```
 
-Keys: `Q` quit, `+` / `-` change the confidence threshold, `S` save a screenshot to `results/demo/`, `N` / `P` next / previous image. The webcam image is not mirrored, because mirrored signs can be misread.
+Keys: `Q` quit, `+` / `-` change the confidence threshold, `D` change the assigned destination, `S` save a screenshot to `results/demo/`, `N` / `P` next / previous image. The webcam image is not mirrored, because mirrored signs can be misread.
+
+The bar below the info panel shows the assigned target and the decision (STOP, SLOW DOWN, CONTINUE, or SEARCHING) derived from the recognized signs. It is a simulation of what the robot would do, and no motors are driven. Use `--destination exit|mens_restroom|womens_restroom` to set the starting target.
 
 ## Known Limitations
 

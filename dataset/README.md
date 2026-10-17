@@ -24,11 +24,13 @@ The original dataset has 7 classes, with Vietnamese names. We kept 5 and renamed
 
 | ID | Class | Original name | Meaning | Role in the delivery scenario |
 |---|---|---|---|---|
-| 0 | `exit` | exit | Exit sign | Destination, and the start / return point |
-| 1 | `mens_restroom` | wc nam | Men's restroom | Destination |
-| 2 | `womens_restroom` | wc nu | Women's restroom | Destination |
-| 3 | `no_entry` | khong phan su mien vao | No entry for unauthorized persons | Restricted area: do not proceed that way |
+| 0 | `exit` | exit | Exit sign | Destination marker: stop if it is the assigned destination, otherwise continue |
+| 1 | `mens_restroom` | wc nam | Men's restroom | Destination marker: stop if it is the assigned destination, otherwise continue |
+| 2 | `womens_restroom` | wc nu | Women's restroom | Destination marker: stop if it is the assigned destination, otherwise continue |
+| 3 | `no_entry` | khong phan su mien vao | No entry for unauthorized persons | Restricted area: always stop and turn away |
 | 4 | `slippery_floor` | tron truot | Slippery floor | Hazard: slow down |
+
+At any time, one of the three destination markers is the robot's assigned destination. See the main [`README.md`](../README.md) for the full decision logic.
 
 **Removed classes:** `cam hut thuoc` (no smoking) and `cam lua` (no fire). These are rules and restrictions that do not correspond to a destination, a restricted area, or a navigation hazard for the robot.
 

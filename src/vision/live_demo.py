@@ -13,7 +13,9 @@ FONT = cv2.FONT_HERSHEY_SIMPLEX
 COLORS = [(255, 128, 0), (0, 170, 0), (190, 0, 190), (0, 120, 255), (0, 190, 230)]  # BGR, one per class
 WIN = "Delivery Robot - sign recognition"
 SHOT_DIR = Path("results/demo")
-HEADER_H, FOOTER_H, MIN_W = 84, 30, 820
+HEADER_H, FOOTER_H, MIN_W = 116, 30, 820
+DESTS = ["exit", "mens_restroom", "womens_restroom"]   # destination markers
+RED, GREEN, AMBER, BLUE, GRAY = (0, 0, 190), (0, 150, 0), (0, 150, 220), (190, 100, 0), (90, 90, 90)  # BGR
 
 
 def fit(img, max_w=1280, max_h=720):
@@ -64,7 +66,30 @@ def annotate(frame, result, names):
     return out, dets
 
 
-def compose(annotated, original, dets, conf, note, fps):
+def decide(dets, target):
+    """Basic decision logic: turn the recognized signs into what the robot would do. Returns (text, color)."""
+    names = {n for n, _ in dets}
+    pretty = lambda n: n.replace("_", " ")
+    if "no_entry" in names:
+        return "STOP - restricted area, turn away", RED
+    if target in names:
+        return f"STOP - delivery point reached ({pretty(target)})", GREEN
+    if "slippery_floor" in names:
+        return "SLOW DOWN - wet floor ahead", AMBER
+    others = [n for n in DESTS if n in names]
+    if others:
+        return f"CONTINUE - {pretty(others[0])} is not the assigned destination", BLUE
+    return "SEARCHING - no sign detected", GRAY
+
+
+def next_target(key, target):
+    """The D key cycles through the destination markers."""
+    if key == ord("d"):
+        return DESTS[(DESTS.index(target) + 1) % len(DESTS)]
+    return target
+
+
+def compose(annotated, original, dets, conf, note, fps, decision, target):
     """Add the info bars: settings, detections, preprocessing thumbnail and pipeline/keys."""
     h, w = annotated.shape[:2]
     cw = max(w, MIN_W)
@@ -82,12 +107,17 @@ def compose(annotated, original, dets, conf, note, fps):
     cv2.putText(canvas, clip_text(line1, text_w), (10, 26), FONT, 0.6, (255, 255, 255), 1)
     cv2.putText(canvas, clip_text(summary, text_w), (10, 58), FONT, 0.6, (0, 255, 255), 1)
 
+    text, color = decision
+    cv2.rectangle(canvas, (0, 88), (cw, HEADER_H - 2), color, -1)
+    bar = f"TARGET: {target}   >   DECISION: {text}"
+    cv2.putText(canvas, clip_text(bar, cw - 20, 0.6, 2), (10, 108), FONT, 0.6, (255, 255, 255), 2)
+
     thumb = cv2.resize(letterbox(original), (76, 76))
     canvas[4:80, cw - 84:cw - 8] = thumb
     cv2.putText(canvas, "model input", (cw - 190, 26), FONT, 0.5, (200, 200, 200), 1)
     cv2.putText(canvas, "640x640", (cw - 170, 46), FONT, 0.5, (200, 200, 200), 1)
 
-    footer = "Frame > letterbox 640 > RGB 0-1 > YOLOv8 > boxes  |  Q quit  +/- conf  S screenshot  N/P next/prev"
+    footer = "SEE > RECOGNIZE > DECIDE  |  Q quit  +/- conf  D target  S screenshot  N/P next/prev"
     cv2.putText(canvas, clip_text(footer, cw - 20, 0.5), (10, HEADER_H + h + 20), FONT, 0.5, (200, 200, 200), 1)
     return canvas
 
@@ -120,7 +150,7 @@ def save_shot(img, tag):
 
 
 def run_stream(cap, model, conf, args):
-    fps, t_prev = 0.0, time.time()
+    fps, t_prev, target = 0.0, time.time(), args.destination
     while True:
         ok, frame = cap.read()
         if not ok:
@@ -133,7 +163,7 @@ def run_stream(cap, model, conf, args):
         now = time.time()
         fps = 0.9 * fps + 0.1 / max(now - t_prev, 1e-6) if fps else 1.0 / max(now - t_prev, 1e-6)
         t_prev = now
-        shown = compose(shown_img, frame, dets, conf, "", fps)
+        shown = compose(shown_img, frame, dets, conf, "", fps, decide(dets, target), target)
         cv2.imshow(WIN, shown)
 
         key = cv2.waitKey(1) & 0xFF
@@ -142,10 +172,11 @@ def run_stream(cap, model, conf, args):
         if key == ord("s"):
             save_shot(shown, "webcam")
         conf = adjust_conf(key, conf)
+        target = next_target(key, target)
 
 
 def run_images(images, model, conf, args):
-    idx, dirty, shown = 0, True, None
+    idx, dirty, shown, target = 0, True, None, args.destination
     while images:
         if dirty:
             path = images[idx]
@@ -158,8 +189,10 @@ def run_images(images, model, conf, args):
             img = fit(img)
             result = predict(model, img, conf, args)
             shown_img, dets = annotate(img, result, model.names)
-            shown = compose(shown_img, img, dets, conf, f"{path.name} ({idx + 1}/{len(images)})", None)
-            print(f"{path.name}: " + (", ".join(f"{n} {s:.2f}" for n, s in dets) if dets else "no detections"))
+            decision = decide(dets, target)
+            shown = compose(shown_img, img, dets, conf, f"{path.name} ({idx + 1}/{len(images)})", None, decision, target)
+            print(f"{path.name}: " + (", ".join(f"{n} {s:.2f}" for n, s in dets) if dets else "no detections")
+                  + f"  ->  [{target}] {decision[0]}")
             dirty = False
 
         cv2.imshow(WIN, shown)
@@ -169,6 +202,9 @@ def run_images(images, model, conf, args):
         new_conf = adjust_conf(key, conf)
         if new_conf != conf:
             conf, dirty = new_conf, True
+        new_target = next_target(key, target)
+        if new_target != target:
+            target, dirty = new_target, True
         if key in (ord("n"), 32) and len(images) > 1:
             idx, dirty = (idx + 1) % len(images), True
         elif key == ord("p") and len(images) > 1:
@@ -182,6 +218,8 @@ def main():
     ap.add_argument("--model", default="models/best.pt")
     ap.add_argument("--source", default=None, help="image, folder of images, or video file (default: webcam)")
     ap.add_argument("--conf", type=float, default=0.5, help="confidence threshold (change live with + and -)")
+    ap.add_argument("--destination", default="mens_restroom", choices=DESTS,
+                    help="the robot's assigned destination (change live with D)")
     ap.add_argument("--imgsz", type=int, default=640)
     ap.add_argument("--camera", type=int, default=0, help="webcam index (try 1 if 0 is the wrong camera)")
     ap.add_argument("--device", default=None, help="e.g. cpu or 0 (default: auto)")
