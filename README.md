@@ -3,7 +3,7 @@
 BS Computer Science, 4th Year
 GitHub profile: [github.com/julpontanares-byte](https://github.com/julpontanares-byte)
 
-This repository collects the team projects and collaborations I worked on, with the source code, documentation, and results for each one. The main computer vision work is **BuzzBee**. The other two projects are software development collaborations included to show the wider set of work.
+This repository collects the team projects, collaborations, and laboratory activities I worked on, with the source code, documentation, and results for each one. The main computer vision project is **BuzzBee**, the other two projects are software development collaborations, and the Computer Vision laboratory activities are in [`cv-labs/`](cv-labs/).
 
 ---
 
@@ -97,6 +97,12 @@ A customizable productivity timer inspired by the Pomodoro technique. It schedul
 
 ---
 
+## Computer Vision laboratory activities
+
+Individual Google Colab notebooks from the Computer Vision course are in [`cv-labs/`](cv-labs/). The full list of activities, with a summary of each, is in [`cv-labs/README.md`](cv-labs/README.md).
+
+---
+
 ## Repository structure
 
 ```
@@ -104,10 +110,11 @@ projects-portfolio/
 ├── README.md            # this file
 ├── BuzzBee/             # computer vision: YOLOv8 sign recognition
 ├── campusKubo/          # Flet app: boarding house finder
-└── focusBreakerv2/      # productivity timer app
+├── focusBreakerv2/      # productivity timer app
+└── cv-labs/             # Computer Vision laboratory activities (Colab notebooks)
 ```
 
-Each project folder contains its own README with installation steps, usage, and documentation.
+Each folder contains its own README with installation steps, usage, and documentation.
 
 ## Topics
 
