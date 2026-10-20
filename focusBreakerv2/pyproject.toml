@@ -1,0 +1,20 @@
+[project]
+name = "focusbreaker"
+version = "1.0.0"
+description = "A professional-grade productivity tool designed to enforce healthy work-break cycles."
+requires-python = ">=3.11"
+dependencies = [
+    "pyside6>=6.4.3",
+    "pystray>=0.19.5",
+    "pygame>=2.5.2",
+    "screen-brightness-control>=0.21.0",
+    "pycaw>=20240210",
+    "keyboard>=0.13.5",
+    "matplotlib>=3.8.2",
+    "pandas>=2.1.4",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.4.3",
+]
